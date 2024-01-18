@@ -1,9 +1,6 @@
 # GoFur
 Web Framework, close to Laravel and Django.
 
-> Based on [slick](https://github.com/anthdm/slick)
-
-
 ## Components
 - Router: [httprouter](https://github.com/julienschmidt/httprouter)
 - Session Management: scs
@@ -51,3 +48,5 @@ Run application in watch mode using [air](https://github.com/cosmtrek/air)
 ```
 air
 ```
+
+> Initial code based on [slick](https://github.com/anthdm/slick)
