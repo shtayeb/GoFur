@@ -1,0 +1,10 @@
+package handlers
+
+import (
+	"github.com/shtayeb/gofur"
+	"{{.mod}}/views/hello"
+)
+
+func HandleHelloIndex(c *gofur.Context) error {
+	return c.Render(hello.Index())
+}

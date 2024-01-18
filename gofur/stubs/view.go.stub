@@ -1,0 +1,11 @@
+package hello
+
+import (
+	"{{.mod}}/views"
+)
+
+templ Index() {
+	@layout.Base() {
+		<h1>hello there</h1>
+	}
+}

@@ -1,0 +1,13 @@
+package main
+
+import (
+	"log"
+	"github.com/shtayeb/gofur"
+	"{{.mod}}/handlers"
+)
+
+func main() {
+	app := gofur.New()
+	app.Get("/", handler.HandleHelloIndex)
+	log.Fatal(app.Start())
+}

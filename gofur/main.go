@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
-	"strings"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -43,7 +45,7 @@ func runProject() *cobra.Command {
 		Example: "gofur run",
 		Short:   "Run GoFur development server",
 		Run: func(cmd *cobra.Command, args []string) {
-			if _, err := os.Stat("cmd/main.go"); err != nil {
+			if _, err := os.Stat("cmds/main.go"); err != nil {
 				fmt.Println("not in GoFur app root: cmd/main.go not found")
 				return
 			}
@@ -52,7 +54,7 @@ func runProject() *cobra.Command {
 				return
 			}
 
-			if err := exec.Command("go", "run", "cmd/main.go").Run(); err != nil {
+			if err := exec.Command("go", "run", "cmds/main.go").Run(); err != nil {
 				fmt.Println(err)
 			}
 		},
@@ -108,24 +110,30 @@ func generateProject() *cobra.Command {
 
 			files := []File{
 				// setup directory
-				{Path: name + "/model", Content: nil},
-				{Path: name + "/handler", Content: nil},
-				{Path: name + "/view", Content: nil},
-				{Path: name + "/cmd", Content: nil},
+				{Path: name + "/models", Content: nil},
+				{Path: name + "/handlers", Content: nil},
+				{Path: name + "/views", Content: nil},
+				{Path: name + "/cmds", Content: nil},
 				{Path: name + "/public", Content: nil},
-				{Path: name + "/view/hello", Content: nil},
-				{Path: name + "/view/layout", Content: nil},
+				{Path: name + "/views/hello", Content: nil},
+				{Path: name + "/views/layout", Content: nil},
+				{Path: name + "/database", Content: nil},
+				{Path: name + "/database/queries", Content: nil},
+				{Path: name + "/database/schema", Content: nil},
 
 				// setup files
-				{Path: name + "/go.mod", Content: writeGoModContents(name)},
-				{Path: name + "/.air.toml", Content: writeAirTomlContents()},
-				{Path: name + "/.env", Content: writeEnvFileContents()},
-				{Path: name + "/.gitignore", Content: writeGitignore()},
-				{Path: name + "/public/app.css", Content: []byte("")},
-				{Path: name + "/cmd/main.go", Content: writeMainContents(name)},
-				{Path: name + "/handler/hello.go", Content: writeHandlerContent(name)},
-				{Path: name + "/view/layout/base.templ", Content: writeBaseLayoutContent()},
-				{Path: name + "/view/hello/hello.templ", Content: writeViewContent(name)},
+				{Path: name + "/go.mod", Content: renderStub("./stubs/go_mod.go.stub", "go.mod", map[string]string{"mod": name})},
+				{Path: name + "/.air.toml", Content: renderStub("./stubs/airtoml.go.stub", "air.toml", map[string]string{"mod": name})},
+				{Path: name + "/.env", Content: renderStub("./stubs/env.go.stub", "env.env", map[string]string{"mod": name})},
+				{Path: name + "/.gitignore", Content: renderStub("./stubs/gitignore.go.stub", ".gitignore", map[string]string{"mod": name})},
+				{Path: name + "/public/app.css", Content: renderStub("./stubs/app_css.go.stub", "app.css", map[string]string{"mod": name})},
+				{Path: name + "/cmds/main.go", Content: renderStub("./stubs/main.go.stub", "main.go", map[string]string{"mod": name})},
+				{Path: name + "/handlers/hello.go", Content: renderStub("./stubs/handler.go.stub", "hello.go", map[string]string{"mod": name})},
+				{Path: name + "/views/layout/base.templ", Content: renderStub("./stubs/base_temp.go.stub", "base.templ", map[string]string{"mod": name})},
+				{Path: name + "/views/hello/hello.templ", Content: renderStub("./stubs/base_temp.go.stub", "hello.templ", map[string]string{"mod": name})},
+				{Path: name + "/database/schema/001_users.sql", Content: renderStub("./stubs/database/schema/users.go.stub", "users.sql", map[string]string{"mod": name})},
+				{Path: name + "/database/schema/002_sessions.sql", Content: renderStub("./stubs/database/schema/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
+				{Path: name + "/database/queries/sessions.sql", Content: renderStub("./stubs/database/queries/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
 			}
 
 			errors := []error{}
@@ -149,13 +157,66 @@ func generateProject() *cobra.Command {
 	}
 }
 
+type StubDetails struct {
+	Name     string
+	FileName string
+	Values   map[string]string
+}
+
+func renderStub(name string, fileName string, values map[string]string) []byte {
+	stub := StubDetails{
+		Name:     name,
+		FileName: fileName,
+		Values:   values,
+	}
+
+	contentsBuff, err := os.ReadFile(stub.Name)
+	if err != nil {
+		log.Fatalf("RENDER STUB: Unable to read file: %s", stub.Name)
+	}
+
+	// Where to write the result
+	// file, err := os.OpenFile(stub.Destination+stub.FileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	// if err != nil {
+	// 	log.Fatalf("Unable to open file: %s", stub.FileName)
+	// }
+	// defer file.Close()
+
+	tem, err := template.New(stub.FileName).Parse(string(contentsBuff))
+	if err != nil {
+		log.Fatalf("RENDER STUB: Unable to parse template: %s", stub.Name)
+	}
+
+	var tem_buffer bytes.Buffer
+	err = tem.Execute(&tem_buffer, stub.Values)
+	if err != nil {
+		log.Fatal("RENDER STUB: cant execute the template")
+	}
+	return tem_buffer.Bytes()
+}
+
 func generateModel() *cobra.Command {
 	return &cobra.Command{
 		Use:     "model",
-		Example: "GoFur model user",
+		Example: "gofur model user",
 		Short:   "Generate new model",
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO:
+			wdPath, _ := os.Getwd()
+			// get the app name somehow
+			file := File{
+				// setup directory
+				Path:    wdPath + "/models/" + args[0],
+				Content: renderStub("./stubs/model.go.stub", fmt.Sprintf("%v.go", args[0]), map[string]string{"mod": args[0]}),
+			}
+
+			if err := os.Mkdir(file.Path, os.ModePerm); err != nil {
+				log.Fatalln(err)
+			}
+
+			err := writeFileWithCheck(file)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		},
 	}
 }
@@ -166,7 +227,20 @@ func generateView() *cobra.Command {
 		Example: "GoFur view user",
 		Short:   "Generate new view",
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO:
+			file := File{
+				// setup directory
+				Path:    "/views/" + args[0],
+				Content: renderStub("./stubs/view.go.stub", fmt.Sprintf("%v.go", args[0]), map[string]string{"mod": args[0]}),
+			}
+
+			if err := os.Mkdir(file.Path, os.ModePerm); err != nil {
+				log.Fatalln(err)
+			}
+
+			err := writeFileWithCheck(file)
+			if err != nil {
+				log.Fatalln(err)
+			}
 
 		},
 	}
@@ -178,287 +252,21 @@ func generateHandler() *cobra.Command {
 		Example: "gofur handler home",
 		Short:   "Generate new handler",
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO:
+			file := File{
+				// setup directory
+				Path:    "/handlers/" + args[0],
+				Content: renderStub("./stubs/handler.go.stub", fmt.Sprintf("%v.go", args[0]), map[string]string{"mod": args[0]}),
+			}
+
+			if err := os.Mkdir(file.Path, os.ModePerm); err != nil {
+				log.Fatalln(err)
+			}
+
+			err := writeFileWithCheck(file)
+			if err != nil {
+				log.Fatalln(err)
+			}
 
 		},
 	}
-}
-
-func writeEnvFileContents() []byte {
-	return []byte(`
-GOFUR_HTTP_LISTEN_ADDR=:3000
-
-GOFUR_SQL_DB_NAME=
-GOFUR_SQL_DB_USER=
-GOFUR_SQL_DB_PASSWORD=
-GOFUR_SQL_DB_HOST=
-GOFUR_SQL_DB_PORT=
-`)
-}
-
-func writeDBFileContents() []byte {
-	c := `
-package database
-
-import (
-	"database/sql"
-	"fmt"
-	"log"
-	"os"
-	"sync"
-)
-
-var (
-	conn *sql.DB
-	once sync.Once
-)
-
-type config struct {
-	Hostname string
-	Username string
-	Password string
-	Port     string
-	DBName   string
-}
-
-func (c *config) Connect() (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
-		c.Username,
-		c.Password,
-		c.Hostname,
-		c.Port,
-		c.DBName,
-	)
-
-	log.Println("Creating database connection using DSN:", dsn)
-
-	conn, err := sql.Open("mysql", dsn)
-	if err != nil {
-		log.Println("Error opening database connection:", err)
-		return nil, err
-	}
-
-	log.Println("Pinging database to verify connection...")
-
-	err = conn.Ping()
-	if err != nil {
-		log.Println("Error pinging database:", err)
-		return nil, err
-	}
-
-	log.Println("Database connection established successfully.")
-
-	return conn, nil
-}
-
-func OpenConnection() {
-	log.Println("Attempting to open database connection...")
-
-	mysql := config{
-		Hostname: os.Getenv("GOFUR_SQL_DB_HOST"),
-		Username: os.Getenv("GOFUR_SQL_DB_USER"),
-		Password: os.Getenv("GOFUR_SQL_DB_PASSWORD"),
-		Port:     os.Getenv("GOFUR_SQL_DB_PORT"),
-		DBName:   os.Getenv("GOFUR_SQL_DB_NAME"),
-	}
-
-	once.Do(func() {
-		log.Println("Creating database connection...")
-
-		db, err := mysql.Connect()
-		if err != nil {
-			log.Println("Error connecting to database:", err)
-			return
-		}
-
-		log.Println("Storing database connection...")
-		conn = db
-	})
-
-	log.Println("Database connection opened.")
-}
-
-func GetConnection() *sql.DB {
-	if conn == nil {
-		OpenConnection()
-	}
-
-	return conn
-}
-
-type Config struct {
-	DB *sql.DB
-}
-
-func NewConfig() *Config {
-	/**
-	 * Open connection
-	 */
-
-	log.Println("Attempting to retrieve database connection...")
-	db := GetConnection()
-	log.Printf("Database connection retrieved: %v\n", db)
-
-	if db == nil {
-		log.Println("ERROR: Database connection failed.")
-		return nil
-	}
-
-	config := Config{
-		DB: db,
-	}
-
-	return &config
-}
-
-`
-	return []byte(c)
-}
-
-func writeMainContents(mod string) []byte {
-	c := fmt.Sprintf(`
-package main
-
-import (
-	"log"
-	"github.com/shtayeb/gofur"
-	"%s/handler"
-)
-
-func main() {
-	app := gofur.New()
-	app.Get("/", handler.HandleHelloIndex)
-	log.Fatal(app.Start())
-}
-`, mod)
-	return []byte(c)
-}
-
-func writeGoModContents(mod string) []byte {
-	buf := strings.Builder{}
-	buf.WriteString("module " + mod)
-	buf.WriteString("\n")
-	buf.WriteString("\n")
-	buf.WriteString("go 1.21.0")
-	return []byte(buf.String())
-}
-
-func writeAirTomlContents() []byte {
-	c := `
-root = "."
-testdata_dir = "testdata"
-tmp_dir = ".build"
-
-[build]
-  args_bin = []
-  bin = "./.build/main"
-  cmd = "templ generate && go build -o ./.build/main ./cmd"
-  delay = 1000
-  exclude_dir = ["assets", ".build", "vendor", "testdata"]
-  exclude_file = []
-  exclude_regex = ["_test.go", "_templ.go"]
-  exclude_unchanged = false
-  follow_symlink = false
-  full_bin = ""
-  include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "templ"]
-  include_file = []
-  kill_delay = "0s"
-  log = "build-errors.log"
-  poll = false
-  poll_interval = 0
-  post_cmd = []
-  pre_cmd = []
-  rerun = false
-  rerun_delay = 500
-  send_interrupt = false
-  stop_on_error = false
-
-[color]
-  app = ""
-  build = "yellow"
-  main = "magenta"
-  runner = "green"
-  watcher = "cyan"
-
-[log]
-  main_only = false
-  time = false
-
-[misc]
-  clean_on_exit = false
-
-[screen]
-  clear_on_rebuild = false
-  keep_scroll = true
-
-`
-	return []byte(c)
-}
-
-func writeViewContent(mod string) []byte {
-	c := fmt.Sprintf(`
-package hello
-
-import (
-	"%s/view/layout"
-)
-
-templ Index() {
-	@layout.Base() {
-		<h1>hello there</h1>
-	}
-}
-`, mod)
-
-	return []byte(c)
-}
-
-func writeHandlerContent(mod string) []byte {
-	c := fmt.Sprintf(`
-package handler
-
-import (
-	"github.com/shtayeb/gofur"
-	"%s/view/hello"
-)
-
-func HandleHelloIndex(c *gofur.Context) error {
-	return c.Render(hello.Index())
-}
-`, mod)
-
-	return []byte(c)
-}
-
-func writeGitignore() []byte {
-	c := `
-bin
-.build
-.env
-`
-	return []byte(c)
-}
-
-func writeBaseLayoutContent() []byte {
-	c := `
-package layout
-
-templ Base() {
-	<!DOCTYPE html>
-	<html lang="en">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<title>GoFur Application</title>
-
-			<script src="https://unpkg.com/htmx.org@1.9.9" defer></script>
-		</head>
-		<body>
-			{ children... }
-		</body>
-	</html>
-}
-`
-	return []byte(c)
 }
