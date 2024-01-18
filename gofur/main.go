@@ -227,9 +227,10 @@ func generateView() *cobra.Command {
 		Example: "GoFur view user",
 		Short:   "Generate new view",
 		Run: func(cmd *cobra.Command, args []string) {
+			wdPath, _ := os.Getwd()
 			file := File{
 				// setup directory
-				Path:    "/views/" + args[0],
+				Path:    wdPath + "/views/" + args[0],
 				Content: renderStub("./stubs/view.go.stub", fmt.Sprintf("%v.go", args[0]), map[string]string{"mod": args[0]}),
 			}
 
@@ -252,9 +253,10 @@ func generateHandler() *cobra.Command {
 		Example: "gofur handler home",
 		Short:   "Generate new handler",
 		Run: func(cmd *cobra.Command, args []string) {
+			wdPath, _ := os.Getwd()
 			file := File{
 				// setup directory
-				Path:    "/handlers/" + args[0],
+				Path:    wdPath + "/handlers/" + args[0],
 				Content: renderStub("./stubs/handler.go.stub", fmt.Sprintf("%v.go", args[0]), map[string]string{"mod": args[0]}),
 			}
 
