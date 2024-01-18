@@ -40,11 +40,11 @@ func main() {
 func runProject() *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Example: "slick run",
-		Short:   "Run slick development server",
+		Example: "gofur run",
+		Short:   "Run GoFur development server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if _, err := os.Stat("cmd/main.go"); err != nil {
-				fmt.Println("not in slick app root: cmd/main.go not found")
+				fmt.Println("not in GoFur app root: cmd/main.go not found")
 				return
 			}
 			if err := exec.Command("templ", "generate").Run(); err != nil {
@@ -63,12 +63,12 @@ func installProject() *cobra.Command {
 	return &cobra.Command{
 		Use:     "install",
 		Aliases: []string{"i"},
-		Example: "slick install",
+		Example: "gofur install",
 		Short:   "Install project's dependency",
 		Run: func(cmd *cobra.Command, args []string) {
 			start := time.Now()
 			fmt.Println("installing project...")
-			if err := exec.Command("go", "get", "github.com/anthdm/slick@latest").Run(); err != nil {
+			if err := exec.Command("go", "get", "github.com/shtayeb/gofur@latest").Run(); err != nil {
 				fmt.Println(err)
 				return
 			}
@@ -90,8 +90,8 @@ func installProject() *cobra.Command {
 func generateProject() *cobra.Command {
 	return &cobra.Command{
 		Use:     "new",
-		Example: "slick new hello-world",
-		Short:   "Create new slick project",
+		Example: "gofur new hello-world",
+		Short:   "Create new GoFur project",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				fmt.Println("invalid arguments")
@@ -100,7 +100,7 @@ func generateProject() *cobra.Command {
 
 			name := args[0]
 
-			fmt.Println("creating new slick project:", name)
+			fmt.Println("creating new GoFur project:", name)
 			if err := os.Mkdir(name, os.ModePerm); err != nil {
 				fmt.Println(err)
 				return
@@ -142,7 +142,7 @@ func generateProject() *cobra.Command {
 			}
 
 			if len(errors) != 0 {
-				fmt.Println("slick encountered errors during file initialization:", errors)
+				fmt.Println("GoFur encountered errors during file initialization:", errors)
 				return
 			}
 		},
@@ -152,7 +152,7 @@ func generateProject() *cobra.Command {
 func generateModel() *cobra.Command {
 	return &cobra.Command{
 		Use:     "model",
-		Example: "slick model user",
+		Example: "GoFur model user",
 		Short:   "Generate new model",
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO:
@@ -163,7 +163,7 @@ func generateModel() *cobra.Command {
 func generateView() *cobra.Command {
 	return &cobra.Command{
 		Use:     "view",
-		Example: "slick view user",
+		Example: "GoFur view user",
 		Short:   "Generate new view",
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO:
@@ -175,7 +175,7 @@ func generateView() *cobra.Command {
 func generateHandler() *cobra.Command {
 	return &cobra.Command{
 		Use:     "handler",
-		Example: "slick handler home",
+		Example: "gofur handler home",
 		Short:   "Generate new handler",
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO:
@@ -186,13 +186,13 @@ func generateHandler() *cobra.Command {
 
 func writeEnvFileContents() []byte {
 	return []byte(`
-SLICK_HTTP_LISTEN_ADDR=:3000
+GOFUR_HTTP_LISTEN_ADDR=:3000
 
-SLICK_SQL_DB_NAME=
-SLICK_SQL_DB_USER=
-SLICK_SQL_DB_PASSWORD=
-SLICK_SQL_DB_HOST=
-SLICK_SQL_DB_PORT=
+GOFUR_SQL_DB_NAME=
+GOFUR_SQL_DB_USER=
+GOFUR_SQL_DB_PASSWORD=
+GOFUR_SQL_DB_HOST=
+GOFUR_SQL_DB_PORT=
 `)
 }
 
@@ -255,11 +255,11 @@ func OpenConnection() {
 	log.Println("Attempting to open database connection...")
 
 	mysql := config{
-		Hostname: os.Getenv("SLICK_SQL_DB_HOST"),
-		Username: os.Getenv("SLICK_SQL_DB_USER"),
-		Password: os.Getenv("SLICK_SQL_DB_PASSWORD"),
-		Port:     os.Getenv("SLICK_SQL_DB_PORT"),
-		DBName:   os.Getenv("SLICK_SQL_DB_NAME"),
+		Hostname: os.Getenv("GOFUR_SQL_DB_HOST"),
+		Username: os.Getenv("GOFUR_SQL_DB_USER"),
+		Password: os.Getenv("GOFUR_SQL_DB_PASSWORD"),
+		Port:     os.Getenv("GOFUR_SQL_DB_PORT"),
+		DBName:   os.Getenv("GOFUR_SQL_DB_NAME"),
 	}
 
 	once.Do(func() {
@@ -321,12 +321,12 @@ package main
 
 import (
 	"log"
-	"github.com/anthdm/slick"
+	"github.com/shtayeb/gofur"
 	"%s/handler"
 )
 
 func main() {
-	app := slick.New()
+	app := gofur.New()
 	app.Get("/", handler.HandleHelloIndex)
 	log.Fatal(app.Start())
 }
@@ -419,11 +419,11 @@ func writeHandlerContent(mod string) []byte {
 package handler
 
 import (
-	"github.com/anthdm/slick"
+	"github.com/shtayeb/gofur"
 	"%s/view/hello"
 )
 
-func HandleHelloIndex(c *slick.Context) error {
+func HandleHelloIndex(c *gofur.Context) error {
 	return c.Render(hello.Index())
 }
 `, mod)
@@ -450,7 +450,7 @@ templ Base() {
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<title>Slick Application</title>
+			<title>GoFur Application</title>
 
 			<script src="https://unpkg.com/htmx.org@1.9.9" defer></script>
 		</head>

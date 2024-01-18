@@ -1,4 +1,4 @@
-package slick
+package gofur
 
 import (
 	"context"
@@ -82,14 +82,14 @@ func (c *Context) Get(key string) any {
 	return c.ctx.Value(key)
 }
 
-type Slick struct {
+type Gofur struct {
 	ErrorHandler ErrorHandler
 	router       *httprouter.Router
 	plugs        []Plug
 }
 
-func New() *Slick {
-	return &Slick{
+func New() *Gofur {
+	return &Gofur{
 		router:       httprouter.New(),
 		ErrorHandler: defaultErrorHandler,
 	}
@@ -104,21 +104,21 @@ func (h methodNotAllowedHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	h.handler(ctx)
 }
 
-func (s *Slick) MethodNotAllowed(h Handler) {
-	s.router.MethodNotAllowed = methodNotAllowedHandler{h}
+func (gf *Gofur) MethodNotAllowed(h Handler) {
+	gf.router.MethodNotAllowed = methodNotAllowedHandler{h}
 }
 
-func (s *Slick) Plug(plugs ...Plug) {
-	s.plugs = append(s.plugs, plugs...)
+func (gf *Gofur) Plug(plugs ...Plug) {
+	gf.plugs = append(gf.plugs, plugs...)
 }
 
-func (s *Slick) Start() error {
+func (gf *Gofur) Start() error {
 	if err := godotenv.Load(); err != nil {
 		return err
 	}
 
 	// Retrieve and sanitize listen address from env
-	listenAddr := os.Getenv("SLICK_HTTP_LISTEN_ADDR")
+	listenAddr := os.Getenv("GOFUR_HTTP_LISTEN_ADDR")
 	listenAddr = strings.TrimSpace(listenAddr)
 
 	// If listen address is not set, use default host and port
@@ -132,52 +132,52 @@ func (s *Slick) Start() error {
 		browsableURL = "localhost" + browsableURL
 	}
 
-	fmt.Printf("slick app running at http://%s\n", browsableURL)
+	fmt.Printf("Gofur app running at http://%s\n", browsableURL)
 
 	// Start the HTTP server
-	return http.ListenAndServe(listenAddr, s.router)
+	return http.ListenAndServe(listenAddr, gf.router)
 }
 
-func (s *Slick) add(method, path string, h Handler, plugs ...Plug) {
-	s.router.Handle(method, path, s.makeHTTPRouterHandle(h, plugs...))
+func (gf *Gofur) add(method, path string, h Handler, plugs ...Plug) {
+	gf.router.Handle(method, path, gf.makeHTTPRouterHandle(h, plugs...))
 }
 
-func (s *Slick) Get(path string, h Handler, plugs ...Plug) {
-	s.add("GET", path, h, plugs...)
+func (gf *Gofur) Get(path string, h Handler, plugs ...Plug) {
+	gf.add("GET", path, h, plugs...)
 }
 
-func (s *Slick) Post(path string, h Handler, plugs ...Plug) {
-	s.add("POST", path, h, plugs...)
+func (gf *Gofur) Post(path string, h Handler, plugs ...Plug) {
+	gf.add("POST", path, h, plugs...)
 }
 
-func (s *Slick) Put(path string, h Handler, plugs ...Plug) {
-	s.add("PUT", path, h, plugs...)
+func (gf *Gofur) Put(path string, h Handler, plugs ...Plug) {
+	gf.add("PUT", path, h, plugs...)
 }
 
-func (s *Slick) Delete(path string, h Handler, plugs ...Plug) {
-	s.add("DELETE", path, h, plugs...)
+func (gf *Gofur) Delete(path string, h Handler, plugs ...Plug) {
+	gf.add("DELETE", path, h, plugs...)
 }
 
-func (s *Slick) Head(path string, h Handler, plugs ...Plug) {
-	s.add("HEAD", path, h, plugs...)
+func (gf *Gofur) Head(path string, h Handler, plugs ...Plug) {
+	gf.add("HEAD", path, h, plugs...)
 }
 
-func (s *Slick) Options(path string, h Handler, plugs ...Plug) {
-	s.add("OPTIONS", path, h, plugs...)
+func (gf *Gofur) Options(path string, h Handler, plugs ...Plug) {
+	gf.add("OPTIONS", path, h, plugs...)
 }
 
-func (s *Slick) makeHTTPRouterHandle(h Handler, plugs ...Plug) httprouter.Handle {
+func (gf *Gofur) makeHTTPRouterHandle(h Handler, plugs ...Plug) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		ctx := newContext(w, r, params)
 		for i := len(plugs) - 1; i >= 0; i-- {
 			h = plugs[i](h)
 		}
-		for i := len(s.plugs) - 1; i >= 0; i-- {
-			h = s.plugs[i](h)
+		for i := len(gf.plugs) - 1; i >= 0; i-- {
+			h = gf.plugs[i](h)
 		}
 		if err := h(ctx); err != nil {
 			// todo: handle the error from the error handler huh?
-			s.ErrorHandler(err, ctx)
+			gf.ErrorHandler(err, ctx)
 		}
 	}
 }

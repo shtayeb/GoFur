@@ -1,4 +1,4 @@
-package slick
+package gofur
 
 import (
 	"encoding/json"

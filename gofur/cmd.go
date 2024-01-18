@@ -22,9 +22,9 @@ func (c *cli) Register(cmds ...commandFunc) {
 
 func (c *cli) Execute() {
 	rootCmd := &cobra.Command{
-		Use:   "slick",
-		Short: "Slick CLI",
-		Long:  "Slick web framework",
+		Use:   "gofur",
+		Short: "GoFur CLI",
+		Long:  "GoFur web framework",
 	}
 
 	for _, command := range c.cmds {
