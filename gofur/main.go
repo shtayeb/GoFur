@@ -110,30 +110,55 @@ func generateProject() *cobra.Command {
 
 			files := []File{
 				// setup directory
-				{Path: name + "/models", Content: nil},
-				{Path: name + "/handlers", Content: nil},
-				{Path: name + "/views", Content: nil},
-				{Path: name + "/cmds", Content: nil},
+				{Path: name + "/http", Content: nil},
+				{Path: name + "/http/handlers", Content: nil},
+				{Path: name + "/http/middlewares", Content: nil},
+				{Path: name + "/http/session", Content: nil},
+				{Path: name + "/http/types", Content: nil},
+
+				{Path: name + "/internal", Content: nil},
+				{Path: name + "/internal/models", Content: nil},
+				{Path: name + "/internal/database", Content: nil},
+
 				{Path: name + "/public", Content: nil},
+				{Path: name + "/public/assets", Content: nil},
+				{Path: name + "/public/css", Content: nil},
+				{Path: name + "/public/js", Content: nil},
+
+				{Path: name + "/sql", Content: nil},
+				{Path: name + "/sql/queries", Content: nil},
+				{Path: name + "/sql/schema", Content: nil},
+
+				{Path: name + "/views", Content: nil},
 				{Path: name + "/views/hello", Content: nil},
 				{Path: name + "/views/layout", Content: nil},
-				{Path: name + "/database", Content: nil},
-				{Path: name + "/database/queries", Content: nil},
-				{Path: name + "/database/schema", Content: nil},
+
+				{Path: name + "/cmds", Content: nil},
 
 				// setup files
+				{Path: name + "/http/handlers/hello.go", Content: renderStub("./stubs/handler.go.stub", "hello.go", map[string]string{"mod": name})},
+				{Path: name + "/http/middlewares/auth.go", Content: renderStub("./stubs/middlerwares/auth.go.stub", "auth.go", map[string]string{"mod": name})},
+				{Path: name + "/http/types/types.go", Content: renderStub("./stubs/types/types.go.stub", "types.go", map[string]string{"mod": name})},
+
+				{Path: name + "/public/css/app.css", Content: renderStub("./stubs/public/app_css.go.stub", "app.css", map[string]string{"mod": name})},
+				{Path: name + "/public/js/app.js", Content: renderStub("./stubs/public/app_js.go.stub", "app.js", map[string]string{"mod": name})},
+
+				{Path: name + "/cmds/main.go", Content: renderStub("./stubs/main.go.stub", "main.go", map[string]string{"mod": name})},
+
+				{Path: name + "/views/layout/base.templ", Content: renderStub("./stubs/base_temp.go.stub", "base.templ", map[string]string{"mod": name})},
+				{Path: name + "/views/hello/hello.templ", Content: renderStub("./stubs/base_temp.go.stub", "hello.templ", map[string]string{"mod": name})},
+
+				{Path: name + "/internal/models/models.go", Content: renderStub("./stubs/internal/models.go.stub", "models.go", map[string]string{"mod": name})},
+				{Path: name + "/internal/app.go", Content: renderStub("./stubs/internal/app.go.stub", "app.go", map[string]string{"mod": name})},
+
+				{Path: name + "/sql/schema/001_users.sql", Content: renderStub("./stubs/sql/schema/users.go.stub", "users.sql", map[string]string{"mod": name})},
+				{Path: name + "/sql/schema/002_sessions.sql", Content: renderStub("./stubs/sql/schema/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
+				{Path: name + "/sql/queries/sessions.sql", Content: renderStub("./stubs/sql/queries/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
+
 				{Path: name + "/go.mod", Content: renderStub("./stubs/go_mod.go.stub", "go.mod", map[string]string{"mod": name})},
 				{Path: name + "/.air.toml", Content: renderStub("./stubs/airtoml.go.stub", "air.toml", map[string]string{"mod": name})},
 				{Path: name + "/.env", Content: renderStub("./stubs/env.go.stub", "env.env", map[string]string{"mod": name})},
 				{Path: name + "/.gitignore", Content: renderStub("./stubs/gitignore.go.stub", ".gitignore", map[string]string{"mod": name})},
-				{Path: name + "/public/app.css", Content: renderStub("./stubs/app_css.go.stub", "app.css", map[string]string{"mod": name})},
-				{Path: name + "/cmds/main.go", Content: renderStub("./stubs/main.go.stub", "main.go", map[string]string{"mod": name})},
-				{Path: name + "/handlers/hello.go", Content: renderStub("./stubs/handler.go.stub", "hello.go", map[string]string{"mod": name})},
-				{Path: name + "/views/layout/base.templ", Content: renderStub("./stubs/base_temp.go.stub", "base.templ", map[string]string{"mod": name})},
-				{Path: name + "/views/hello/hello.templ", Content: renderStub("./stubs/base_temp.go.stub", "hello.templ", map[string]string{"mod": name})},
-				{Path: name + "/database/schema/001_users.sql", Content: renderStub("./stubs/database/schema/users.go.stub", "users.sql", map[string]string{"mod": name})},
-				{Path: name + "/database/schema/002_sessions.sql", Content: renderStub("./stubs/database/schema/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
-				{Path: name + "/database/queries/sessions.sql", Content: renderStub("./stubs/database/queries/sessions.go.stub", "sessions.sql", map[string]string{"mod": name})},
 			}
 
 			errors := []error{}
